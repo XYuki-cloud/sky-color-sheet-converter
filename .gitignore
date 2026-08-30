@@ -1,0 +1,72 @@
+# Local Python environments
+.venv/
+.audio-venv/
+**/.venv/
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-basetemp*/
+.pytest-tmp*/
+.pytest-tmp-*/
+.mypy_cache/
+.ruff_cache/
+
+# Codex desktop state and attached media
+.codex/
+.codex-remote-attachments/
+
+# Windows shortcuts are machine-specific and are not source artifacts.
+*.lnk
+
+# User-provided source material stays local; use examples/ for tracked fixtures.
+待转谱/*
+!待转谱/README.md
+
+# Regenerated results, runtime caches, and logs
+outputs/*
+!outputs/
+!outputs/README.md
+logs/*
+!logs/
+!logs/README.md
+archive/runtime-cache-*/
+archive/legacy-output/
+*.log
+
+# Audio/video and model artifacts
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.m4v
+*.mid
+*.midi
+!test_songs/*.mid
+!test_songs/*.midi
+*.sky.json
+*.color.json
+*.notes.json
+*.report.json
+*.sky-*.png
+*.color-*.png
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.safetensors
+checkpoints/
+
+# Local vendored references and third-party binaries
+source/sky-python-music-sheet-maker-master/
+vendor/tsumugi/.venv/
+vendor/tsumugi/checkpoints/
+vendor/sky-music-sheet-maker/*.exe
+vendor/sky-music-sheet-maker/*.zip

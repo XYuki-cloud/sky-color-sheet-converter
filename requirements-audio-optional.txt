@@ -1,0 +1,4 @@
+# Optional single-melody backends used by scripts/audio_to_midi.py
+librosa>=0.11,<0.12
+soundfile>=0.12,<0.14
+torchcrepe==0.0.24

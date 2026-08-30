@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sky 彩谱试听器</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="player-core.js" defer></script>
+    <script src="player.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">SKY SHEET LAB</p>
+          <h1>彩谱试听器</h1>
+          <p id="source-info" class="source-info">请载入原始 TXT、.sky.json 或 .color.json</p>
+        </div>
+        <label class="primary-button file-button">
+          <span>载入谱面</span>
+          <input id="file-input" type="file" accept=".txt,.json,.json.txt,application/json" />
+        </label>
+      </header>
+
+      <section class="control-bar" aria-label="播放控制">
+        <div class="control-group">
+          <span class="control-label">音量</span>
+          <input id="volume-input" type="range" min="0" max="1" step="0.01" value="0.68" />
+          <output id="volume-value" for="volume-input">68%</output>
+        </div>
+        <div class="control-group">
+          <span class="control-label">移调</span>
+          <input id="transpose-input" type="range" min="-12" max="12" step="1" value="0" />
+          <output id="transpose-value" for="transpose-input">0 半音</output>
+        </div>
+        <button id="auto-play-button" class="secondary-button auto-play-button" type="button" aria-pressed="false">
+          按时间自动播放
+        </button>
+        <button id="reset-button" class="secondary-button" type="button">重置</button>
+        <p id="status" class="status" role="status">等待载入谱面</p>
+      </section>
+
+      <section id="song-picker" class="song-picker" hidden>
+        <label for="song-select">文件中检测到多首歌曲，请选择：</label>
+        <select id="song-select"></select>
+        <button id="load-song-button" class="secondary-button" type="button">载入所选歌曲</button>
+      </section>
+
+      <section class="workspace">
+        <aside class="preview-panel panel">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">CURRENT LAYER</p>
+              <h2 id="preview-title">尚未载入</h2>
+            </div>
+            <span id="layer-badge" class="layer-badge">—</span>
+          </div>
+          <div id="preview-grid" class="note-grid large-grid" aria-label="当前层预览"></div>
+          <div class="preview-meta">
+            <strong id="position-label">—</strong>
+            <span id="source-time-label">按空格播放并推进；鼠标跳转不会发声</span>
+          </div>
+          <div class="shortcut-card">
+            <span class="shortcut-key">SPACE</span>
+            <span>手动播放当前层并推进；也可使用“按时间自动播放”</span>
+          </div>
+        </aside>
+
+        <section class="gallery-panel panel">
+          <div class="gallery-header">
+            <div>
+              <p class="panel-kicker">SHEET MAP</p>
+              <h2>全部逻辑图</h2>
+            </div>
+            <div class="jump-controls">
+              <button id="previous-button" class="icon-button" type="button" aria-label="上一张图">←</button>
+              <label class="jump-input-wrap">
+                <span>跳到</span>
+                <input id="jump-input" type="number" min="1" placeholder="图号" aria-label="图号" />
+              </label>
+              <button id="jump-button" class="secondary-button" type="button">定位</button>
+              <button id="next-button" class="icon-button" type="button" aria-label="下一张图">→</button>
+            </div>
+          </div>
+          <div id="gallery" class="gallery-grid" aria-live="polite">
+            <div class="empty-state">
+              <span class="empty-icon">＋</span>
+              <strong>载入一份谱面开始调试</strong>
+              <span>支持原始黑白 TXT、黑白 JSON 和转换器生成的彩色 JSON</span>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <footer class="footer-note">
+        颜色顺序：黑 → 红 → 蓝 · 15 键按谱面调性生成两八度大调音阶 · 自动模式使用源 time，空格模式忽略节奏
+      </footer>
+    </main>
+  </body>
+</html>

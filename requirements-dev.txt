@@ -1,0 +1,2 @@
+# Test-only dependencies for the core conversion package.
+pytest>=8,<10
