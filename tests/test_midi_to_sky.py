@@ -46,7 +46,12 @@ def test_midi_conversion_writes_black_and_color_artifacts(tmp_path: Path):
         ],
     )
 
-    payload = convert_midi_file_to_sky(source, tmp_path / "out", key="C")
+    payload = convert_midi_file_to_sky(
+        source,
+        tmp_path / "out",
+        key="C",
+        include_desktop_pages=True,
+    )
 
     assert payload["black"]["format"] == "sky-black-v1"
     assert payload["color"]["format"] == "sky-color-v1"
@@ -90,6 +95,22 @@ def test_midi_conversion_writes_black_and_color_artifacts(tmp_path: Path):
     black_page = Image.open(output / "song.sky-001.png").convert("RGB")
     assert black_page.getpixel((52, 130)) == (0, 0, 0)
     assert black_page.getpixel((172, 130)) == (255, 255, 255)
+
+
+def test_midi_conversion_skips_desktop_pages_by_default(tmp_path: Path):
+    source = tmp_path / "mobile_only.mid"
+    _write_midi(source, [(0, 60, 120), (480, 64, 120)])
+
+    payload = convert_midi_file_to_sky(source, tmp_path / "out", key="C")
+
+    output = tmp_path / "out"
+    assert payload["black"]["artifacts"]["png_pages"] == []
+    assert payload["color"]["artifacts"]["png_pages"] == []
+    assert payload["report"]["artifacts"]["black_png_pages"] == []
+    assert payload["report"]["artifacts"]["color_png_pages"] == []
+    assert not (output / "mobile_only.sky-001.png").exists()
+    assert not (output / "mobile_only.color-001.png").exists()
+    assert (output / "mobile_only.color-mobile-001.png").is_file()
 
 
 def test_repeated_key_starts_a_new_color_image(tmp_path: Path):

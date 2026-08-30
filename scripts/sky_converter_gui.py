@@ -59,12 +59,15 @@ def format_conversion_summary(payload: Mapping[str, Any]) -> str:
 
     artifacts = payload.get("artifacts") or {}
     pages = artifacts.get("png_pages") or []
+    mobile_pages = artifacts.get("mobile_png_pages") or []
     warnings = payload.get("warnings") or []
     summary = (
         f"转换完成：{payload.get('source_note_count', 0)} 个音符、"
         f"{payload.get('source_frame_count', 0)} 个源帧 → "
-        f"{payload.get('image_count', 0)} 张逻辑图，生成 {len(pages)} 张 PNG。"
+        f"{payload.get('image_count', 0)} 张逻辑图，生成 {len(mobile_pages)} 张手机竖版 PNG。"
     )
+    if pages:
+        summary += f" 另生成 {len(pages)} 张横版 PNG。"
     if warnings:
         summary += f" 另有 {len(warnings)} 条警告。"
     return summary

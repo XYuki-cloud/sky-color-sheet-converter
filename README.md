@@ -15,7 +15,7 @@
 | MIDI 中间层 | 可以先单独试听或编辑 MIDI，再进入谱面转换 |
 | 音频后端 | Tsumugi `guitar_v1_5`、Basic Pitch、pYIN、torchcrepe |
 | 旧格式兼容 | SkyStudio / 画世界 JSON TXT，可合并同一时刻和弦 |
-| 彩谱渲染 | 黑→红→蓝，标准分页和手机竖版分页 |
+| 彩谱渲染 | 黑→红→蓝，默认手机竖版分页，横版分页可选 |
 | 播放调试 | 本地静态播放器，支持空格手动推进、鼠标跳转和按时间自动播放 |
 | 诊断报告 | 记录映射、丢弃、半音就近替换、源时间和生成文件 |
 
@@ -304,6 +304,7 @@ outputs/song/
 | `--shift -1` | 按 Sky 音阶级数整体平移；不是半音移调 |
 | `--chromatic-policy drop` | 半音处理：`drop` 丢弃并报告、`nearest` 就近映射、`error` 遇到即停止 |
 | `--title` | 覆盖输出谱面标题 |
+| `--desktop-pages` | 额外生成横版 6×4 PNG；默认不生成 |
 
 建议先查看 `*.report.json` 再决定 `--shift` 和半音策略。报告会列出超出 15 键范围、被丢弃和被就近替换的音符，不静默隐藏转换损失。
 
@@ -314,12 +315,12 @@ outputs/song/
 ```text
 song.sky.json                  # 黑白谱结构化数据
 song.color.json                # sky-color-v1 彩谱数据
-song.sky-001.png               # 标准黑白分页图
-song.color-001.png             # 标准彩色分页图，6×4，每页 24 张逻辑图
 song.color-mobile-001.png      # 手机竖版彩色分页图，4 列，每页最多 32 张逻辑图
 song.notes.json                # 规范化 MIDI 音符侧车数据
 song.report.json               # 映射和告警报告
 ```
+
+默认只生成 JSON 和手机竖版 PNG。需要电脑端横版分页图时，给 `midi_to_sky.py` 或 `txt_to_color_sky.py` 增加 `--desktop-pages`；该选项会额外生成黑白/彩色横版 PNG，其中彩色分页为 6×4、每页 24 张逻辑图。
 
 手机竖版 PNG 的右上角显示 `1/10` 这种“当前页/总页数”序号，便于发布、保存和按页查看。PNG 中每个音符格整格填色，空格保持白色。
 

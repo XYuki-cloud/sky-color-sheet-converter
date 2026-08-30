@@ -50,7 +50,14 @@ def test_conversion_summary_contains_generated_counts():
             "source_frame_count": 12,
             "image_count": 5,
             "source_note_count": 30,
-            "artifacts": {"png_pages": ["one.png", "two.png"]},
+            "artifacts": {
+                "png_pages": ["one.png", "two.png"],
+                "mobile_png_pages": [
+                    "mobile-one.png",
+                    "mobile-two.png",
+                    "mobile-three.png",
+                ],
+            },
             "warnings": ["重复按键"],
         }
     )
@@ -58,7 +65,8 @@ def test_conversion_summary_contains_generated_counts():
     assert "30 个音符" in summary
     assert "12 个源帧" in summary
     assert "5 张逻辑图" in summary
-    assert "2 张 PNG" in summary
+    assert "3 张手机竖版 PNG" in summary
+    assert "另生成 2 张横版 PNG" in summary
     assert "1 条警告" in summary
 
 

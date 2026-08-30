@@ -688,8 +688,14 @@ def convert_sky_txt_file(
     output_dir: str | Path,
     *,
     song_index: int = 0,
+    include_desktop_pages: bool = False,
 ) -> dict[str, Any]:
-    """Convert one TXT file and write its JSON and paginated PNG artifacts."""
+    """Convert one TXT file and write JSON and mobile PNG artifacts.
+
+    Desktop-oriented 6x4 pages are opt-in because the mobile pages are the
+    primary shareable output.  Set ``include_desktop_pages`` when those pages
+    are explicitly needed.
+    """
 
     source = Path(source_path)
     song = parse_sky_txt(source, song_index=song_index)
@@ -704,7 +710,11 @@ def convert_sky_txt_file(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    page_paths = render_color_pages(images, output, stem=stem, title=song.title)
+    page_paths = (
+        render_color_pages(images, output, stem=stem, title=song.title)
+        if include_desktop_pages
+        else ()
+    )
     mobile_page_paths = render_mobile_color_pages(
         images, output, stem=stem, title=song.title
     )
@@ -737,18 +747,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=0,
         help="歌曲序号，从 0 开始（默认：0）",
     )
+    parser.add_argument(
+        "--desktop-pages",
+        action="store_true",
+        help="额外生成横版 6×4 PNG（默认不生成）",
+    )
     args = parser.parse_args(argv)
     try:
         payload = convert_sky_txt_file(
             args.input,
             args.out_dir,
             song_index=args.song_index,
+            include_desktop_pages=args.desktop_pages,
         )
     except (OSError, SkyTxtFormatError, ValueError) as exc:
         parser.error(str(exc))
+    artifacts = payload["artifacts"]
+    desktop_pages = artifacts["png_pages"]
+    mobile_pages = artifacts["mobile_png_pages"]
+    page_summary = f"手机竖版 PNG {len(mobile_pages)} 张"
+    if desktop_pages:
+        page_summary += f"，横版 PNG {len(desktop_pages)} 张"
     print(
         f"已转换：{payload['source_frame_count']} 个源帧 -> "
-        f"{payload['image_count']} 张彩色图，PNG 分页 {len(payload['artifacts']['png_pages'])} 张"
+        f"{payload['image_count']} 张彩色图，{page_summary}"
     )
     return 0
 

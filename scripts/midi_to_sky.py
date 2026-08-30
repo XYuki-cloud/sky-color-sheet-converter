@@ -387,8 +387,14 @@ def convert_midi_file_to_sky(
     shift: int | None = None,
     chromatic_policy: str = "drop",
     title: str | None = None,
+    include_desktop_pages: bool = False,
 ) -> dict[str, Any]:
-    """Write MIDI sidecars, black Sky pages, and overlap-safe colour pages."""
+    """Write MIDI sidecars and mobile Sky pages.
+
+    Desktop-oriented 6x4 pages are opt-in because the mobile pages are the
+    primary shareable output.  Set ``include_desktop_pages`` when those pages
+    are explicitly needed.
+    """
 
     source = Path(midi_path)
     read_result = read_midi_events(source)
@@ -422,8 +428,16 @@ def convert_midi_file_to_sky(
     color_json_path = output / f"{stem}.color.json"
     report_path = output / f"{stem}.report.json"
     notes_path = output / f"{stem}.notes.json"
-    black_pages = render_black_pages(black_images, output, stem=stem, title=score_title)
-    color_pages = render_color_pages(color_images, output, stem=stem, title=score_title)
+    black_pages = (
+        render_black_pages(black_images, output, stem=stem, title=score_title)
+        if include_desktop_pages
+        else ()
+    )
+    color_pages = (
+        render_color_pages(color_images, output, stem=stem, title=score_title)
+        if include_desktop_pages
+        else ()
+    )
     mobile_color_pages = render_mobile_color_pages(
         color_images, output, stem=stem, title=score_title
     )
@@ -488,6 +502,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="半音处理：error 停止、drop 丢弃并报告、nearest 就近映射",
     )
     parser.add_argument("--title", default=None, help="覆盖输出谱面标题")
+    parser.add_argument(
+        "--desktop-pages",
+        action="store_true",
+        help="额外生成横版 6×4 PNG（默认不生成）",
+    )
     args = parser.parse_args(argv)
     try:
         payload = convert_midi_file_to_sky(
@@ -498,6 +517,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             shift=args.shift,
             chromatic_policy=args.chromatic_policy,
             title=args.title,
+            include_desktop_pages=args.desktop_pages,
         )
     except (OSError, MidiToSkyError, ValueError) as exc:
         parser.error(str(exc))

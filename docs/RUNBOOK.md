@@ -75,9 +75,10 @@ Tsumugi 适配器优先使用 `vendor/tsumugi/.venv/Scripts/python.exe`，其次
 - `--shift`：在 15 个连续 Sky 音阶位置上的整体平移；
 - `--chromatic-policy`：半音 `drop`、`nearest` 或 `error`；
 - `--subdivisions`：每拍量化格，默认 4；
-- `--title`：覆盖谱面标题。
+- `--title`：覆盖谱面标题；
+- `--desktop-pages`：额外生成横版 6×4 PNG，默认不生成。
 
-输出包括黑白/彩色 JSON、分页 PNG、音符侧车和报告。手机竖版每页最多 32 张逻辑图，页码显示为 `1/10`。
+默认输出黑白/彩色 JSON、手机竖版彩色分页 PNG、音符侧车和报告。手机竖版每页最多 32 张逻辑图，页码显示为 `1/10`。需要横版分页 PNG 时显式添加 `--desktop-pages`。
 
 ## 6. 旧 Sky TXT 兼容路径
 
@@ -85,7 +86,7 @@ Tsumugi 适配器优先使用 `vendor/tsumugi/.venv/Scripts/python.exe`，其次
 .\.venv\Scripts\python.exe scripts\txt_to_color_sky.py input-sky.txt --out-dir outputs\legacy-sky --song-index 0
 ```
 
-它支持 UTF-8/UTF-16 JSON TXT、多个歌曲对象和 `1Key0` 等旧式键名。旧格式的输出仍可在静态播放器中加载。
+它支持 UTF-8/UTF-16 JSON TXT、多个歌曲对象和 `1Key0` 等旧式键名。默认只生成 JSON 与手机竖版彩色 PNG；需要额外生成横版 PNG 时添加 `--desktop-pages`。旧格式的输出仍可在静态播放器中加载。
 
 ## 7. GUI 与播放器
 

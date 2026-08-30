@@ -148,7 +148,11 @@ def test_converter_writes_versioned_json_and_24_image_png_pages(tmp_path: Path):
     )
     output_dir = tmp_path / "out"
 
-    payload = convert_sky_txt_file(source, output_dir)
+    payload = convert_sky_txt_file(
+        source,
+        output_dir,
+        include_desktop_pages=True,
+    )
 
     assert payload["format"] == "sky-color-v1"
     assert payload["source_frame_count"] == 4
@@ -176,6 +180,31 @@ def test_converter_writes_versioned_json_and_24_image_png_pages(tmp_path: Path):
     assert image.getpixel((92, 130)) == (255, 0, 0)  # A2 / red
     assert image.getpixel((132, 130)) == (0, 0, 255)  # A3 / blue
     assert image.getpixel((172, 130)) == (255, 255, 255)  # A4 / empty
+
+
+def test_converter_skips_desktop_pages_by_default(tmp_path: Path):
+    source = tmp_path / "mobile_only.txt"
+    source.write_text(
+        json.dumps(
+            _song(
+                [
+                    {"time": 0, "key": "1Key0"},
+                    {"time": 1, "key": "1Key1"},
+                ]
+            ),
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "out"
+
+    payload = convert_sky_txt_file(source, output_dir)
+
+    assert payload["artifacts"]["png_pages"] == []
+    assert not list(output_dir.glob("mobile_only.color-[0-9][0-9][0-9].png"))
+    assert payload["artifacts"]["mobile_png_pages"] == [
+        "mobile_only.color-mobile-001.png"
+    ]
 
 
 def test_mobile_color_pages_use_four_columns_and_no_cell_labels(tmp_path: Path):
