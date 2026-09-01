@@ -1,0 +1,282 @@
+package com.xyuki.skycolor.converter.storage;
+
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.DocumentsContract;
+import android.provider.OpenableColumns;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * Storage Access Framework operations for the converter.
+ *
+ * <p>The app only receives and persists document/tree URIs. It never converts a URI into a raw
+ * filesystem path and therefore does not need broad storage permissions.</p>
+ */
+public final class SafDocumentStore {
+    private static final String[] CHILD_PROJECTION = {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_FLAGS
+    };
+
+    private final ContentResolver resolver;
+
+    public SafDocumentStore(ContentResolver resolver) {
+        if (resolver == null) {
+            throw new IllegalArgumentException("ContentResolver 不能为空");
+        }
+        this.resolver = resolver;
+    }
+
+    public static void takePersistablePermission(
+            ContentResolver resolver,
+            Uri uri,
+            int flags
+    ) {
+        if (resolver == null || uri == null) {
+            return;
+        }
+        try {
+            resolver.takePersistableUriPermission(
+                    uri,
+                    flags & (android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            );
+        } catch (SecurityException ignored) {
+            // Some providers do not advertise persistable grants. The current activity can still
+            // use the URI while it remains open, and the UI reports a normal read/write failure.
+        }
+    }
+
+    public Uri rootDocumentUri(Uri treeUri) {
+        if (treeUri == null) {
+            throw new IllegalArgumentException("文件夹 URI 不能为空");
+        }
+        String documentId = DocumentsContract.getTreeDocumentId(treeUri);
+        return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId);
+    }
+
+    public List<Entry> listChildren(Uri treeUri, Uri parentDocumentUri) throws IOException {
+        if (treeUri == null || parentDocumentUri == null) {
+            throw new IOException("文件夹 URI 无效");
+        }
+        String documentId = documentId(parentDocumentUri, treeUri);
+        Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, documentId);
+        Cursor cursor = resolver.query(childrenUri, CHILD_PROJECTION, null, null, null);
+        if (cursor == null) {
+            throw new IOException("无法读取文件夹内容：" + parentDocumentUri);
+        }
+        List<Entry> entries = new ArrayList<>();
+        try (Cursor ignored = cursor) {
+            int idColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID);
+            int nameColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME);
+            int mimeColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_MIME_TYPE);
+            int flagsColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_FLAGS);
+            if (idColumn < 0 || nameColumn < 0 || mimeColumn < 0) {
+                throw new IOException("文件夹提供程序缺少标准 DocumentsContract 字段");
+            }
+            while (cursor.moveToNext()) {
+                String childId = cursor.getString(idColumn);
+                String name = cursor.getString(nameColumn);
+                String mime = cursor.getString(mimeColumn);
+                int flags = flagsColumn < 0 ? 0 : cursor.getInt(flagsColumn);
+                entries.add(new Entry(
+                        DocumentsContract.buildDocumentUriUsingTree(treeUri, childId),
+                        name,
+                        mime,
+                        flags
+                ));
+            }
+        }
+        entries.sort(Comparator.comparing(entry -> entry.name.toLowerCase(Locale.ROOT)));
+        return entries;
+    }
+
+    public List<Entry> findInputFiles(Uri treeUri) throws IOException {
+        List<Entry> result = new ArrayList<>();
+        Deque<Uri> pending = new ArrayDeque<>();
+        pending.add(rootDocumentUri(treeUri));
+        while (!pending.isEmpty()) {
+            Uri directory = pending.removeFirst();
+            for (Entry entry : listChildren(treeUri, directory)) {
+                if (entry.directory) {
+                    pending.addLast(entry.uri);
+                } else if (isSupportedInput(entry.name)) {
+                    result.add(entry);
+                }
+            }
+        }
+        result.sort(Comparator.comparing(entry -> entry.name.toLowerCase(Locale.ROOT)));
+        return result;
+    }
+
+    public Uri ensureDirectory(Uri treeUri, Uri parentDocumentUri, String name) throws IOException {
+        Entry existing = findChild(treeUri, parentDocumentUri, name, true);
+        if (existing != null) {
+            return existing.uri;
+        }
+        Uri parent = asDocumentUri(treeUri, parentDocumentUri);
+        Uri created = DocumentsContract.createDocument(
+                resolver,
+                parent,
+                DocumentsContract.Document.MIME_TYPE_DIR,
+                name
+        );
+        if (created == null) {
+            throw new IOException("无法创建输出文件夹：" + name);
+        }
+        return created;
+    }
+
+    public void writeUtf8(
+            Uri treeUri,
+            Uri parentDocumentUri,
+            String name,
+            String content
+    ) throws IOException {
+        writeBytes(
+                treeUri,
+                parentDocumentUri,
+                name,
+                "application/json",
+                content.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    public void writeBytes(
+            Uri treeUri,
+            Uri parentDocumentUri,
+            String name,
+            String mimeType,
+            byte[] content
+    ) throws IOException {
+        if (content == null) {
+            throw new IOException("输出内容不能为空：" + name);
+        }
+        Entry existing = findChild(treeUri, parentDocumentUri, name, false);
+        if (existing != null) {
+            throw new IOException("拒绝覆盖已存在文件：" + name);
+        }
+        Uri parent = asDocumentUri(treeUri, parentDocumentUri);
+        Uri fileUri = DocumentsContract.createDocument(resolver, parent, mimeType, name);
+        if (fileUri == null) {
+            throw new IOException("无法创建输出文件：" + name);
+        }
+        try (OutputStream output = resolver.openOutputStream(fileUri, "w")) {
+            if (output == null) {
+                throw new IOException("无法写入输出文件：" + name);
+            }
+            output.write(content);
+            output.flush();
+        }
+    }
+
+    public byte[] readBytes(Uri uri) throws IOException {
+        if (uri == null) {
+            throw new IOException("输入文件 URI 不能为空");
+        }
+        try (InputStream input = resolver.openInputStream(uri)) {
+            if (input == null) {
+                throw new IOException("无法打开输入文件：" + uri);
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[16 * 1024];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                if (read > 0) {
+                    output.write(buffer, 0, read);
+                }
+            }
+            return output.toByteArray();
+        }
+    }
+
+    public String displayName(Uri uri) {
+        if (uri == null) {
+            return "";
+        }
+        Cursor cursor = resolver.query(
+                uri,
+                new String[]{OpenableColumns.DISPLAY_NAME},
+                null,
+                null,
+                null
+        );
+        if (cursor != null) {
+            try (Cursor ignored = cursor) {
+                int column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (column >= 0 && cursor.moveToFirst()) {
+                    String value = cursor.getString(column);
+                    if (value != null && !value.trim().isEmpty()) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return uri.toString();
+    }
+
+    public static boolean isSupportedInput(String name) {
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".json") || lower.endsWith(".txt");
+    }
+
+    private Entry findChild(
+            Uri treeUri,
+            Uri parentDocumentUri,
+            String name,
+            boolean directory
+    ) throws IOException {
+        for (Entry entry : listChildren(treeUri, parentDocumentUri)) {
+            if (entry.directory == directory && entry.name.equals(name)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    private static Uri asDocumentUri(Uri treeUri, Uri parentDocumentUri) {
+        String documentId = documentId(parentDocumentUri, treeUri);
+        return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId);
+    }
+
+    private static String documentId(Uri parentDocumentUri, Uri treeUri) {
+        String value = parentDocumentUri.toString();
+        if (value.contains("/document/")) {
+            return DocumentsContract.getDocumentId(parentDocumentUri);
+        }
+        return DocumentsContract.getTreeDocumentId(treeUri);
+    }
+
+    public static final class Entry {
+        public final Uri uri;
+        public final String name;
+        public final String mimeType;
+        public final boolean directory;
+        public final int flags;
+
+        private Entry(Uri uri, String name, String mimeType, int flags) {
+            this.uri = uri;
+            this.name = name == null ? "" : name;
+            this.mimeType = mimeType == null ? "" : mimeType;
+            this.directory = DocumentsContract.Document.MIME_TYPE_DIR.equals(this.mimeType);
+            this.flags = flags;
+        }
+    }
+}

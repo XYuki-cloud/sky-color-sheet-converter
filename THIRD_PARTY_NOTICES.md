@@ -29,7 +29,7 @@ source set. Consult the upstream repository for its license and notices.
 
 The small files under `test_songs/` are test fixtures, not user-provided
 music outputs. Their provenance and upstream license references are recorded
-in [`test_songs/README.md`](test_songs/README.md). The root Apache-2.0 license
+in [`desktop-converter/test_songs/README.md`](desktop-converter/test_songs/README.md). The root Apache-2.0 license
 does not relicense those files; downstream distributors should preserve the
 corresponding notices.
 

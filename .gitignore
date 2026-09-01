@@ -1,41 +1,43 @@
-# Local Python environments
-.venv/
-.audio-venv/
+# Python environments, caches and local tooling
 **/.venv/
-
-# Python and test caches
-__pycache__/
+/.audio-venv/
+**/__pycache__/
 *.py[cod]
-.pytest_cache/
-.pytest-basetemp*/
-.pytest-tmp*/
-.pytest-tmp-*/
-.mypy_cache/
-.ruff_cache/
+**/.pytest_cache/
+**/.pytest-basetemp*/
+**/.pytest-tmp*/
+**/.mypy_cache/
+**/.ruff_cache/
+/.codex/
+/.codex-remote-attachments/
 
-# Codex desktop state and attached media
-.codex/
-.codex-remote-attachments/
+# Android and IDE build state
+**/.gradle/
+**/build/
+**/local.properties
+**/.idea/
+*.iml
 
-# Windows shortcuts are machine-specific and are not source artifacts.
-*.lnk
+# User data and generated results stay local
+/待转谱/*
+!/待转谱/README.md
+/outputs/*
+!/outputs/README.md
+/logs/*
+!/logs/README.md
+/desktop-converter/outputs/*
+!/desktop-converter/outputs/README.md
+/desktop-converter/logs/*
+!/desktop-converter/logs/README.md
+/archive/*
+/checkpoints/*
 
-# User-provided source material stays local; use examples/ for tracked fixtures.
-待转谱/*
-!待转谱/README.md
+# Root launchers are local convenience copies; project launchers remain tracked.
+/启动彩谱试听器.cmd
+/启动彩谱转换器.cmd
+/启动音乐转换器.cmd
 
-# Regenerated results, runtime caches, and logs
-outputs/*
-!outputs/
-!outputs/README.md
-logs/*
-!logs/
-!logs/README.md
-archive/runtime-cache-*/
-archive/legacy-output/
-*.log
-
-# Audio/video and model artifacts
+# Generated media, score exports and model artifacts
 *.mp3
 *.wav
 *.flac
@@ -49,8 +51,8 @@ archive/legacy-output/
 *.m4v
 *.mid
 *.midi
-!test_songs/*.mid
-!test_songs/*.midi
+!desktop-converter/test_songs/*.mid
+!desktop-converter/test_songs/*.midi
 *.sky.json
 *.color.json
 *.notes.json
@@ -62,11 +64,12 @@ archive/legacy-output/
 *.ckpt
 *.onnx
 *.safetensors
-checkpoints/
+*.log
+*.lnk
 
-# Local vendored references and third-party binaries
-source/sky-python-music-sheet-maker-master/
-vendor/tsumugi/.venv/
-vendor/tsumugi/checkpoints/
-vendor/sky-music-sheet-maker/*.exe
-vendor/sky-music-sheet-maker/*.zip
+# Optional vendored references and third-party binaries
+desktop-converter/source/sky-python-music-sheet-maker-master/
+desktop-converter/vendor/tsumugi/.venv/
+desktop-converter/vendor/tsumugi/checkpoints/
+desktop-converter/vendor/sky-music-sheet-maker/*.exe
+desktop-converter/vendor/sky-music-sheet-maker/*.zip
